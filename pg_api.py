@@ -60,3 +60,48 @@ class PgAPI(object):
             );
         ''')
         self.connection.commit()
+
+    def add_place(self, name, address, city_name=None):
+        """Добавление Места в базу данных.
+        address: str
+        """
+        cur = self.connection.cursor()
+        city_id = self.find_city(city_name)
+        cur.execute('''
+                    INSERT INTO Places (name, city_id, address) 
+                    VALUES (%s, %s, %s);
+                    ''', (name, city_id, address))
+        self.connection.commit()
+
+    def add_event(self, name, city_name=None, place_name=None,
+                  url=None, datetime=None):
+        """Добавление События в базу данных.
+        url: str
+        datetime: datetime
+        """
+        cur = self.connection.cursor()
+        city_id = self.find_city(city_name)
+        place_id = self.find_place(place_name)
+        cur.execute('''
+                    INSERT INTO Events 
+                    (name, city_id, place_id, url, datetime) 
+                    VALUES (%s, %s, %s, %s, %s);
+                    ''', (name, city_id, place_id, url, datetime))
+        self.connection.commit()
+
+    def find_city(self, city_name):
+        """Поиск id города по названию"""
+        cur = self.connection.cursor()
+        cur.execute('''
+                    SELECT id FROM Cities WHERE name = %s
+                    ''', (city_name, ))
+        city_id = cur.fetchone()
+        return city_id[0] if city_id else None
+    
+    def find_place(self, place_name):
+        """Поиск id места по названию"""
+        cur = self.connection.cursor()
+        cur.execute('''SELECT id FROM Places WHERE name = %s
+                    ''', (place_name,))
+        place_id = cur.fetchone()
+        return place_id[0] if place_id else None
