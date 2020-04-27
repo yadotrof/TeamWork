@@ -140,3 +140,6 @@ dmypy.json
 # Windows
 Thumbs.db
 *.lnk
+
+# Project credentials
+config.py
