@@ -1,6 +1,7 @@
 import logging
 from aiogram import Bot, Dispatcher, executor, types
 from config import TG_TOKEN
+from bot_api import TelegramAPI
 
 logging.basicConfig(level=logging.INFO)
 
@@ -8,30 +9,17 @@ bot = Bot(token=TG_TOKEN)
 dp = Dispatcher(bot)
 
 
-@dp.message_handler(commands='start')
-async def start_cmd_handler(message: types.Message):
-    text = 'привет, я бот, который подскажет, куда тебе сходить ' \
-           'в свободное время, для начала расскажи о себе ' \
-           '/registration ^^ '
-    await message.reply(text)
+@dp.message_handler()
+async def command_cmd_handler(message: types.Message):
+    response, keyboard_markup = TelegramAPI.process_message(message)
+    await message.reply(response, reply_markup=keyboard_markup)
 
 
-@dp.message_handler(commands='registration')
-async def registration_cmd_handler(message: types.Message):
-    text = 'для начала выбери город'
-    keyboard_markup = types.InlineKeyboardMarkup(row_width=2)
-
-    text_and_data = (
-        ('Moscow', 'msk'),
-        ('Saint Petersburg', 'spb'),
-    )
-
-    row_btns = (types.InlineKeyboardButton(text, callback_data=data) 
-                for text, data in text_and_data)
-    keyboard_markup.row(*row_btns)
-    await message.reply(text,  reply_markup=keyboard_markup)
+@dp.callback_query_handler()
+async def inline_answer_callback_handler(query: types.CallbackQuery):
+    response = TelegramAPI.process_callback(query)
+    await bot.send_message(query.from_user.id, response)
 
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
-
