@@ -105,3 +105,9 @@ class PgAPI(object):
                     ''', (place_name,))
         place_id = cur.fetchone()
         return place_id[0] if place_id else None
+
+    def delete_old_events(self):
+        cur = self.connection.cursor()
+        cur.execute('''DELETE FROM Events WHERE datetime < CURRENT_TIMESTAMP;
+                    ''')
+        self.connection.commit()
