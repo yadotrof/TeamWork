@@ -4,7 +4,9 @@ from config import DB_CONFIG
 
 
 def fill_db(database_config):
-    start_parsing(PgAPI(**database_config))
+    db = PgAPI(**database_config)
+    start_parsing(db)
+    db.delete_old_events()
 
 
 if __name__ == '__main__':
