@@ -1,5 +1,5 @@
 import json
-import datetime
+from datetime import datetime
 import requests
 import logging
 from pg_api import PgAPI
@@ -35,7 +35,7 @@ def get_place(place_id):
     return json_place
 
 
-def find_events(categories, size, location):
+def find_events(categories, size, location, time_start, time_end):
     """Функция кидает запрос в кудаго-api на получение списка
              событий
 
@@ -51,8 +51,8 @@ def find_events(categories, size, location):
     url = "https://kudago.com/public-api/v1.4/events/?lang=&" \
           "fields=" + fields + "&expand=&order_by=" + \
           "&text_format=" + "&ids=&page_size=" + size + \
-          "&location=" + location + "&actual_since=" + \
-          "&actual_until=" + "&is_free=" + \
+          "&location=" + location + "&actual_since=" + time_start + \
+          "&actual_until=" + time_end + "&is_free=" + \
           "&categories=" + categories + "&lon=&lat=&radius="
     request = requests.get(url).text
     logging.debug(request)
@@ -72,13 +72,17 @@ def start_parsing(db):
     """
     cities = {"msk", "spb"}
     size = "10"
+    time_start = datetime.datetime.now().timestamp()
+    time_end = datetime.now().timestamp() + \
+               datetime.timedelta(days=10).timestamp()
     for city in cities:
-        data = find_events(categories_ev, size, city)
+        data = find_events(categories_ev, size, city, time_start,
+                           time_end)
         print(data)
         for event in data:
             place_data = get_place(event["place"]["id"])
             db.add_event(event["title"], event["location"],
                          place_data["title"], event["site_url"],
                          event["dates"][0])
-            db.add_place(place_data["title"], place_data["address"],
+            db.add_place((place_data["title"]), place_data["address"],
                          place_data["location"])
