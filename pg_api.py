@@ -61,6 +61,14 @@ class PgAPI(object):
         ''')
         self.connection.commit()
 
+    def send_daily(self):
+        users = self.get_all_users()
+        messages = [{'telegram_id': user['telegram_id'],
+                     'events': self.send_user_event(user['telegram_id'])
+                    }
+                    for user in users]
+        return messages
+
     def add_user(self, telegram_id):
         """Добавление пользователя в базу данных.
         telegram_id: int
@@ -178,6 +186,15 @@ class PgAPI(object):
                     SELECT name From Categories
                     WHERE id = %s;
                     ''', (category_id,))
+        return cur.fetchall()
+
+    def get_all_subscribed_users(self):
+        """Возвращает список всех подписанных пользователей"""
+        cur = self.connection.cursor()
+        cur.execute('''
+                    SELECT id, telegrav_id From Users
+                    WHERE subscribed=True;
+                    ''')
         return cur.fetchall()
 
     def get_user_categories(self, user_id):
