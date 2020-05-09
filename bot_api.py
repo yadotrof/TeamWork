@@ -63,11 +63,12 @@ class TelegramAPI(BotAPI):
             'help': 'help_command',
             'start': 'start_command',
             'registration': 'registration_command',
-            'categories': 'categories_command'
+            'categories': 'categories_command',
+            'find': 'find_command'
         }
         func = bot_commands.get(message.get_command(),
                                 lambda: "Я пока не знаю такой команды")
-        return func(message)
+        return func(self, message)
 
     def start_command(self, data):
         text = 'привет, я бот, который подскажет, куда тебе сходить ' \
@@ -102,11 +103,13 @@ class TelegramAPI(BotAPI):
             'cinema': 'process_categories',
             'festival': 'process_categories',
             'concert': 'process_categories',
-            'stand-up': 'process_categories'
+            'stand-up': 'process_categories',
+            'find': 'find_command',
+            'clean': 'clean_command'
         }
         func = bot_callback.get(answer_data,
                                 lambda: "Я пока не знаю такой команды")
-        return self.func(answer_data)
+        return func(self, answer_data)
 
     def process_city(self, data):
         self.set_city(data)
@@ -116,12 +119,20 @@ class TelegramAPI(BotAPI):
     @staticmethod
     def categories_command(self, data):
         # TODO нужна функция на вытащить доступные категории из базы
-        text = 'выбери куда бы ты хотел пойти'
-        keyboard_markup = types.InlineKeyboardMarkup(row_width=4)
+        # запрос на те которые выбраны у пользователя
+        # разница между ними- то из чего предлагаем выбирать
+
+        text = f'Сейчас у тебя выбраны:__ЗАПРОС_К_БД'
+        # 'отметь другие категории или нажми /find и мы найдем' \
+        # 'что нибудь по этим'
+
+        keyboard_markup = types.InlineKeyboardMarkup(row_width=6)
         categories = (('Кино', 'cinema'),
                       ('Стенд-ап', 'stand-up'),
                       ('Концерт', 'concert'),
-                      ('Фестиваль', 'festival'))  # "party", "theater")
+                      ('Фестиваль', 'festival'),
+                      ('Завершить выбор и начать поиск', 'find'),
+                      ('Сбросить все выбранные', 'clean'))
 
         row_btn = (types.InlineKeyboardButton(text, callback_data=data)
                    for text, data in categories)
@@ -130,10 +141,8 @@ class TelegramAPI(BotAPI):
 
     def process_categories(self, data):
         # TODO нужен метод на вытащить ссылки событий из базы
-        self.set_city(data)
-        text = f'ты хочешь пойти на {data!r}, смотри что я нашел:\n'
-        events = self.get_event(data)
-        return text + "\n".join(events)
+        # добавляем выбранную категорию у списку пользвателя
+        self.categories_command(data)
 
     @staticmethod
     def help_command(self):
@@ -141,3 +150,12 @@ class TelegramAPI(BotAPI):
                ' /registration\nДля настройки категорий ' \
                '/categories\n'
         return text
+
+    def find_command(self, data):
+        text = "Смотри, куда можно сходить\n"
+        events = self.get_event(data)
+        return text + "\n".join(events)
+
+    def clean_command(self, data):
+        # почистить выбранные категории пользователя в бд
+        self.categories_command(data)
