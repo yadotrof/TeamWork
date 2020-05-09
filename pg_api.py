@@ -66,7 +66,8 @@ class PgAPI(object):
             
             CREATE TABLE Categories
             (id SERIAL PRIMARY KEY,
-            name VARCHAR(40) NOT NULL CONSTRAINT Categories_unique_name UNIQUE
+            name VARCHAR(40) NOT NULL CONSTRAINT Categories_unique_name UNIQUE,
+            tag VARCHAR(10) NOT NULL CONSTRAINT Categories_unique_tag UNIQUE
             )
         ''')
         self.connection.commit()
@@ -94,12 +95,12 @@ class PgAPI(object):
         datetime: datetime
         """
         for category in categories:
-            self.add_category(category)
+            self.add_category(category['name'], category['tag'])
         cur = self.connection.cursor()
         city_id = self.find_city(city_name) if city_name else None
         place_id = self.find_place(place_name) if place_name else None
 
-        categories_ids = [self.find_category(category)
+        categories_ids = [self.find_category(category['name'])
                           for category in categories]
         try:
             cur.execute('''
@@ -125,12 +126,12 @@ class PgAPI(object):
         except psycopg2.errors.UniqueViolation:
             self.connection.rollback()
 
-    def add_category(self, name):
+    def add_category(self, name, tag):
         cur = self.connection.cursor()
         try:
             cur.execute('''
-                        INSERT INTO Categories (name) VALUES (%s);
-                        ''', (name,))
+                        INSERT INTO Categories (name, tag) VALUES (%s, %s);
+                        ''', (name, tag))
             self.connection.commit()
         except psycopg2.errors.UniqueViolation:
             self.connection.rollback()
