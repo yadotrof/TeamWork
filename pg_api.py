@@ -128,7 +128,7 @@ class PgAPI(object):
 
     def delete_old_events(self):
         cur = self.connection.cursor()
-        cur.execute('''DELETE FROM Events WHERE datetime < CURRENT_TIMESTAMP;
+        cur.execute('''DELETE FROM Events WHERE finish_datetime < CURRENT_TIMESTAMP;
                     ''')
         self.connection.commit()
 
