@@ -94,8 +94,8 @@ class TelegramAPI(BotAPI):
                                 lambda: "Я пока не знаю такой команды")
         return func(self, answer_data)
 
-    def process_city(self, data):
-        self.set_city(data)
+    def process_city(self, query):
+        self.db.set_user_city(query.from_user.id, query.data)
         text = "давай посмотрим, что ты любишь /categories"
         return text
 
@@ -122,11 +122,11 @@ class TelegramAPI(BotAPI):
         keyboard_markup.row(*row_btn)
         return text, keyboard_markup
 
-    def process_categories(self, data):
-        self.db.set_user_category(data.data)
+    def process_categories(self, query):
+        self.db.set_user_category(query.from_user.id, query.data)
 
     @staticmethod
-    def help_command(self):
+    def help_command():
         text = 'Для начала работы /start\nДля выбора города' \
                ' /registration\nДля настройки категорий ' \
                '/categories\nДля поиска /find'
