@@ -88,13 +88,13 @@ def start_parsing(db):
                            city['tag'], time_start, time_end)
         for event in data:
             # Но вообще надо сделать нормально выбор категорий
-            categories = [{'name': "Кино", 'tag': 'cinema'}]
+            category = {'name': "Кино", 'tag': 'cinema'}
             if event['place']:
                 place_data = get_place(event["place"]["id"])
             else:
                 place_data = None
             db.add_event(name=event["title"],
-                         categories=categories,
+                         category=category,
                          finish_datetime=datetime.fromtimestamp(
                              event["dates"][0]['end']),
                          start_datetime=datetime.fromtimestamp(
