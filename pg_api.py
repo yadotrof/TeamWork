@@ -154,11 +154,11 @@ class PgAPI(object):
         place_id = cur.fetchone()
         return place_id[0] if place_id else None
 
-    def find_category(self, name):
+    def find_category(self, category):
+        """Нахождение имени id категории по имени"""
         cur = self.connection.cursor()
-        cur.execute('''
-                    SELECT id FROM Categories WHERE name = %s
-                    ''', (name,))
+        cur.execute('''SELECT id FROM Categories WHERE name = %s
+                    ''', (category,))
         category_id = cur.fetchone()
         return category_id[0] if category_id else None
 
@@ -178,18 +178,19 @@ class PgAPI(object):
                     WHERE telegram_id=%s
                     ''', (user_id,))
         categories = cur.fetchone()
-        return categories[0] if categories else []
+        return [categories[0]] if categories[0] else []
 
     def set_user_category(self, user_id, category):
         """Задать новую категорию пользователю"""
         old_categories = self.get_user_categories(user_id)
         new_category = self.find_category(category)
         if new_category not in old_categories:
+            old_categories.append(new_category)
             cur = self.connection.cursor()
             cur.execute('''
-                        UPDATE TABLE Users
-                        SET category=%s WHERE telegram_id=%s
-                        ''', (new_category, user_id))
+                        UPDATE Users
+                        SET categories=%s WHERE telegram_id=%s
+                        ''', (old_categories, user_id))
             self.connection.commit()
             return True
         else:
@@ -197,10 +198,11 @@ class PgAPI(object):
 
     def set_user_city(self, user_id, city_name):
         """data = {chat_id: int, city: str}"""
+
         city_id = self.find_city(city_name)
         cur = self.connection.cursor()
         cur.execute('''
-                     UPDATE TABLE Users
+                     UPDATE Users
                      SET city_id=%s WHERE telegram_id=%s
                      ''', (city_id, user_id))
         self.connection.commit()
