@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 import requests
 import logging
 from pg_api import PgAPI
@@ -51,8 +51,8 @@ def find_events(categories, size, location, time_start, time_end):
     url = "https://kudago.com/public-api/v1.4/events/?lang=&" \
           "fields=" + fields + "&expand=&order_by=" + \
           "&text_format=" + "&ids=&page_size=" + size + \
-          "&location=" + location + "&actual_since=" + time_start + \
-          "&actual_until=" + time_end + "&is_free=" + \
+          "&location=" + location + "&actual_since=" + str(time_start) + \
+          "&actual_until=" + str(time_end) + "&is_free=" + \
           "&categories=" + categories + "&lon=&lat=&radius="
     request = requests.get(url).text
     logging.debug(request)
@@ -70,19 +70,40 @@ def start_parsing(db):
     не хочет сразу все категории, цикл тройной вложенности- больно
     на сл неделе что-нибудь придумаю
     """
-    cities = {"msk", "spb"}
+
+    cities = [
+        {'name': 'Москва',
+         'tag': 'msk'},
+        {'name': 'Санкт-петербург',
+         'tag': 'spb'}
+    ]
+
     size = "10"
-    time_start = datetime.datetime.now().timestamp()
-    time_end = datetime.now().timestamp() + \
-               datetime.timedelta(days=10).timestamp()
+    time_start = datetime.now().timestamp()
+    time_end = datetime.now() + timedelta(days=10)
+    time_end = time_end.timestamp()
     for city in cities:
-        data = find_events(categories_ev, size, city, time_start,
-                           time_end)
-        print(data)
+        db.add_city(**city)
+        data = find_events(categories_ev, size,
+                           city['tag'], time_start, time_end)
         for event in data:
-            place_data = get_place(event["place"]["id"])
-            db.add_event(event["title"], event["location"],
-                         place_data["title"], event["site_url"],
-                         event["dates"][0])
-            db.add_place((place_data["title"]), place_data["address"],
-                         place_data["location"])
+            # Но вообще надо сделать нормально выбор категорий
+            categories = ["cinema"]
+            if event['place']:
+                place_data = get_place(event["place"]["id"])
+            else:
+                place_data = None
+            db.add_event(name=event["title"],
+                         categories=["cinema"],
+                         finish_datetime=datetime.fromtimestamp(
+                             event["dates"][0]['end']),
+                         start_datetime=datetime.fromtimestamp(
+                             event["dates"][0]['start']),
+                         city_name=city['name'],
+                         place_name=place_data["title"] if place_data
+                         else None,
+                         url=event["site_url"])
+            if place_data:
+                db.add_place(name=(place_data["title"]),
+                             address=place_data["address"],
+                             city_name=place_data["location"])
