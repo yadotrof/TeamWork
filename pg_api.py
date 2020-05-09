@@ -72,6 +72,19 @@ class PgAPI(object):
         ''')
         self.connection.commit()
 
+    def add_user(self, telegram_id):
+        """Добавление пользователя в базу данных.
+        telegram_id: int
+        """
+        cur = self.connection.cursor()
+        try:
+            cur.execute('''
+                        INSERT INTO Users (telegram_id) VALUES (%s);
+                        ''', (telegram_id,))
+            self.connection.commit()
+        except psycopg2.errors.UniqueViolation:
+            self.connection.rollback()
+
     def add_place(self, name, address, city_name=None):
         """Добавление Места в базу данных.
         address: str
