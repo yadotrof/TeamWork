@@ -41,7 +41,8 @@ class PgAPI(object):
             (id SERIAL PRIMARY KEY,
             telegram_id INT NOT NULL CONSTRAINT Users_unique_chat_id UNIQUE,
             city_id INT REFERENCES Cities(id),
-            categories INT[]
+            categories INT[],
+            subscribed BOOL DEFAULT False
             );
 
             CREATE TABLE Messages
@@ -59,6 +60,14 @@ class PgAPI(object):
             )
         ''')
         self.connection.commit()
+
+    def send_daily(self):
+        users = self.get_all_users()
+        messages = [{'telegram_id': user['telegram_id'],
+                     'events': self.send_user_event(user['telegram_id'])
+                    }
+                    for user in users]
+        return messages
 
     def add_user(self, telegram_id):
         """Добавление пользователя в базу данных.
@@ -179,6 +188,15 @@ class PgAPI(object):
                     ''', (category_id,))
         return cur.fetchall()
 
+    def get_all_subscribed_users(self):
+        """Возвращает список всех подписанных пользователей"""
+        cur = self.connection.cursor()
+        cur.execute('''
+                    SELECT id, telegrav_id From Users
+                    WHERE subscribed=True;
+                    ''')
+        return cur.fetchall()
+
     def get_user_categories(self, user_id):
         """Получить массив индексов категорий пользователя"""
         cur = self.connection.cursor()
@@ -219,6 +237,34 @@ class PgAPI(object):
     def send_user_event(self, data):
         """data = {chat_id: int}"""
         pass
+
+    def set_user_subscribed(self, user_id):
+        """Подписать пользователя на рассылку"""
+        cur = self.connection.cursor()
+        cur.execute('''
+                     UPDATE Users
+                     SET subscribed=True 
+                     WHERE telegram_id=%s AND subscribed=False
+                     ''', (user_id, ))
+        if cur.statusmessage[-1] == '0':
+            return False
+        else:
+            self.connection.commit()
+            return True
+
+    def clear_user_subscribed(self, user_id):
+        """Отписать пользователя от рассылки"""
+        cur = self.connection.cursor()
+        cur.execute('''
+                     UPDATE Users
+                     SET subscribed=False 
+                     WHERE telegram_id=%s AND subscribed=True
+                     ''', (user_id, ))
+        if cur.statusmessage[-1] == '0':
+            return False
+        else:
+            self.connection.commit()
+            return True
 
 
 def init_db(database_config):
