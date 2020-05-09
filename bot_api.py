@@ -8,6 +8,7 @@ class BotAPI(ABC):
     Дочерние классы обрабатывают особенности оболочек
     и передают базе данных необходимые запросы.
     """
+
     @abstractmethod
     def set_city(self, data):
         pass
@@ -59,6 +60,7 @@ class TelegramAPI(BotAPI):
     def process_message(self, message):
         # TODO что там с обработкой данных convert_data ??
         bot_commands = {
+            'help': 'help_command',
             'start': 'start_command',
             'registration': 'registration_command',
             'categories': 'categories_command'
@@ -132,3 +134,10 @@ class TelegramAPI(BotAPI):
         text = f'ты хочешь пойти на {data!r}, смотри что я нашел:\n'
         events = self.get_event(data)
         return text + "\n".join(events)
+
+    @staticmethod
+    def help_command(self):
+        text = 'Для начала работы /start\nДля выбора города' \
+               ' /registration\nДля настройки категорий ' \
+               '/categories\n'
+        return text
