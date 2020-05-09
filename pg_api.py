@@ -41,7 +41,8 @@ class PgAPI(object):
             (id SERIAL PRIMARY KEY,
             telegram_id INT NOT NULL CONSTRAINT Users_unique_chat_id UNIQUE,
             city_id INT REFERENCES Cities(id),
-            categories INT[]
+            categories INT[],
+            subscribed BOOL DEFAULT False
             );
 
             CREATE TABLE Messages
@@ -219,6 +220,34 @@ class PgAPI(object):
     def send_user_event(self, data):
         """data = {chat_id: int}"""
         pass
+
+    def set_user_subscribed(self, user_id):
+        """Подписать пользователя на рассылку"""
+        cur = self.connection.cursor()
+        cur.execute('''
+                     UPDATE Users
+                     SET subscribed=True 
+                     WHERE telegram_id=%s AND subscribed=False
+                     ''', (user_id, ))
+        if cur.statusmessage[-1] == '0':
+            return False
+        else:
+            self.connection.commit()
+            return True
+
+    def clear_user_subscribed(self, user_id):
+        """Отписать пользователя от рассылки"""
+        cur = self.connection.cursor()
+        cur.execute('''
+                     UPDATE Users
+                     SET subscribed=False 
+                     WHERE telegram_id=%s AND subscribed=True
+                     ''', (user_id, ))
+        if cur.statusmessage[-1] == '0':
+            return False
+        else:
+            self.connection.commit()
+            return True
 
 
 def init_db(database_config):
