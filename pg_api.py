@@ -170,6 +170,15 @@ class PgAPI(object):
                     ''')
         self.connection.commit()
 
+    def get_category_name(self, category_id):
+        """Получить массив человекоподобных названий категорий"""
+        cur = self.connection.cursor()
+        cur.execute('''
+                    SELECT name From Categories
+                    WHERE id = %s;
+                    ''', (category_id,))
+        return cur.fetchall()
+
     def get_user_categories(self, user_id):
         """Получить массив индексов категорий пользователя"""
         cur = self.connection.cursor()
