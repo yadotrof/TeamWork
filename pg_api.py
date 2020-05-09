@@ -1,4 +1,5 @@
 import psycopg2
+from config import DB_CONFIG
 
 
 class PgAPI(object):
@@ -138,3 +139,12 @@ class PgAPI(object):
                     WHERE datetime < CURRENT_TIMESTAMP;
                     ''')
         self.connection.commit()
+
+
+def init_db(database_config):
+    db = PgAPI(**database_config)
+    db.init_tables()
+
+
+if __name__ == '__main__':
+    init_db(DB_CONFIG)
