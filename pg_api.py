@@ -102,6 +102,18 @@ class PgAPI(object):
         except psycopg2.errors.UniqueViolation:
             self.connection.rollback()
 
+    def add_city(self, name, tag):
+        cur = self.connection.cursor()
+        try:
+            cur.execute('''
+                        INSERT INTO Cities
+                        (name, parser_tag)
+                        VALUES (%s, %s);
+                        ''', (name, tag))
+            self.connection.commit()
+        except psycopg2.errors.UniqueViolation:
+            self.connection.rollback()
+
     def find_city(self, city_name):
         """Поиск id города по названию"""
         cur = self.connection.cursor()
