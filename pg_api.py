@@ -41,7 +41,7 @@ class PgAPI(object):
             CREATE TABLE Events
             (id SERIAL PRIMARY KEY,
             name VARCHAR(100) NOT NULL CONSTRAINT Events_unique_name UNIQUE,
-            categories VARCHAR(20)[],
+            categories INT[],
             city_id INT REFERENCES Cities(id),
             place_id INT REFERENCES Places(id),
             url TEXT,
@@ -53,7 +53,7 @@ class PgAPI(object):
             (id SERIAL PRIMARY KEY,
             telegram_id INT NOT NULL CONSTRAINT Users_unique_chat_id UNIQUE,
             city_id INT REFERENCES Cities(id),
-            categories VARCHAR(20)[]
+            categories INT[]
             );
 
             CREATE TABLE Messages
@@ -63,6 +63,11 @@ class PgAPI(object):
             content TEXT NOT NULL,
             time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
+            
+            CREATE TABLE Categories
+            (id SERIAL PRIMARY KEY,
+            name VARCHAR(40) NOT NULL CONSTRAINT Categories_unique_name UNIQUE
+            )
         ''')
         self.connection.commit()
 
@@ -88,16 +93,21 @@ class PgAPI(object):
         url: str
         datetime: datetime
         """
+        for category in categories:
+            self.add_category(category)
         cur = self.connection.cursor()
         city_id = self.find_city(city_name) if city_name else None
         place_id = self.find_place(place_name) if place_name else None
+
+        categories_ids = [self.find_category(category)
+                          for category in categories]
         try:
             cur.execute('''
                         INSERT INTO Events
                         (name, categories, city_id, place_id, url, 
                         start_datetime, finish_datetime)
                         VALUES (%s, %s, %s, %s, %s, %s, %s);
-                        ''', (name, categories, city_id, place_id, url,
+                        ''', (name, categories_ids, city_id, place_id, url,
                               start_datetime, finish_datetime))
             self.connection.commit()
         except psycopg2.errors.UniqueViolation:
@@ -111,6 +121,16 @@ class PgAPI(object):
                         (name, parser_tag)
                         VALUES (%s, %s);
                         ''', (name, tag))
+            self.connection.commit()
+        except psycopg2.errors.UniqueViolation:
+            self.connection.rollback()
+
+    def add_category(self, name):
+        cur = self.connection.cursor()
+        try:
+            cur.execute('''
+                        INSERT INTO Categories (name) VALUES (%s);
+                        ''', (name,))
             self.connection.commit()
         except psycopg2.errors.UniqueViolation:
             self.connection.rollback()
@@ -132,11 +152,19 @@ class PgAPI(object):
         place_id = cur.fetchone()
         return place_id[0] if place_id else None
 
+    def find_category(self, name):
+        cur = self.connection.cursor()
+        cur.execute('''
+                    SELECT id FROM Categories WHERE name = %s
+                    ''', (name,))
+        category_id = cur.fetchone()
+        return category_id[0] if category_id else None
+
     def delete_old_events(self):
         cur = self.connection.cursor()
         cur.execute('''
                     DELETE FROM Events 
-                    WHERE datetime < CURRENT_TIMESTAMP;
+                    WHERE finish_datetime < CURRENT_TIMESTAMP;
                     ''')
         self.connection.commit()
 
