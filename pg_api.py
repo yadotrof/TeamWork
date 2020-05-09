@@ -8,18 +8,6 @@ class PgAPI(object):
                                            user=user,
                                            password=password)
 
-    def set_city(self, data):
-        """data = {chat_id: int, city: str}"""
-        pass
-
-    def set_preferences(self, data):
-        """data = {chat_id: int, category: str}"""
-        pass
-
-    def get_event(self, data):
-        """data = {chat_id: int}"""
-        pass
-
     def init_tables(self):
         """Функция для создания таблиц в базе данных"""
         cur = self.connection.cursor()
@@ -71,6 +59,19 @@ class PgAPI(object):
             )
         ''')
         self.connection.commit()
+
+    def add_user(self, telegram_id):
+        """Добавление пользователя в базу данных.
+        telegram_id: int
+        """
+        cur = self.connection.cursor()
+        try:
+            cur.execute('''
+                        INSERT INTO Users (telegram_id) VALUES (%s);
+                        ''', (telegram_id,))
+            self.connection.commit()
+        except psycopg2.errors.UniqueViolation:
+            self.connection.rollback()
 
     def add_place(self, name, address, city_name=None):
         """Добавление Места в базу данных.
@@ -153,11 +154,11 @@ class PgAPI(object):
         place_id = cur.fetchone()
         return place_id[0] if place_id else None
 
-    def find_category(self, name):
+    def find_category(self, category):
+        """Нахождение имени id категории по имени"""
         cur = self.connection.cursor()
-        cur.execute('''
-                    SELECT id FROM Categories WHERE name = %s
-                    ''', (name,))
+        cur.execute('''SELECT id FROM Categories WHERE name = %s
+                    ''', (category,))
         category_id = cur.fetchone()
         return category_id[0] if category_id else None
 
@@ -168,6 +169,56 @@ class PgAPI(object):
                     WHERE finish_datetime < CURRENT_TIMESTAMP;
                     ''')
         self.connection.commit()
+
+    def get_category_name(self, category_id):
+        """Получить массив человекоподобных названий категорий"""
+        cur = self.connection.cursor()
+        cur.execute('''
+                    SELECT name From Categories
+                    WHERE id = %s;
+                    ''', (category_id,))
+        return cur.fetchall()
+
+    def get_user_categories(self, user_id):
+        """Получить массив индексов категорий пользователя"""
+        cur = self.connection.cursor()
+        cur.execute('''
+                    SELECT categories From Users
+                    WHERE telegram_id=%s
+                    ''', (user_id,))
+        categories = cur.fetchone()
+        return [categories[0]] if categories[0] else []
+
+    def set_user_category(self, user_id, category):
+        """Задать новую категорию пользователю"""
+        old_categories = self.get_user_categories(user_id)
+        new_category = self.find_category(category)
+        if new_category not in old_categories:
+            old_categories.append(new_category)
+            cur = self.connection.cursor()
+            cur.execute('''
+                        UPDATE Users
+                        SET categories=%s WHERE telegram_id=%s
+                        ''', (old_categories, user_id))
+            self.connection.commit()
+            return True
+        else:
+            return False
+
+    def set_user_city(self, user_id, city_name):
+        """data = {chat_id: int, city: str}"""
+
+        city_id = self.find_city(city_name)
+        cur = self.connection.cursor()
+        cur.execute('''
+                     UPDATE Users
+                     SET city_id=%s WHERE telegram_id=%s
+                     ''', (city_id, user_id))
+        self.connection.commit()
+
+    def send_user_event(self, data):
+        """data = {chat_id: int}"""
+        pass
 
 
 def init_db(database_config):
