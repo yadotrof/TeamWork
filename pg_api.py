@@ -215,9 +215,33 @@ class PgAPI(object):
                      ''', (city_id, user_id))
         self.connection.commit()
 
-    def send_user_event(self, data):
-        """data = {chat_id: int}"""
-        pass
+
+    def send_user_events(self, user_id, count=1):
+        """Функция, которая возвращает пользователю события
+        Возвращает n случайных событий из категорий
+        которые выбраны у пользователя.
+        Если у пользователя не стоят категории, вернуть False
+        Если не найдены события, вернуть []
+        """
+        cur = self.connection.cursor()
+        cur.execute('''
+                    SELECT categories From Users
+                    WHERE telegram_id=%s
+                    ''', (user_id,))
+        categories = cur.fetchone()
+        print(categories)
+        if not categories:
+            return False
+        events = []
+        for category in categories[0]:
+            cur.execute('''
+                        SELECT * From Events
+                        WHERE category <> %s
+                        ''', (category,))
+            category_events = cur.fetchall()
+            for event in category_events:
+                events.add(event)
+        return events
 
 
 def init_db(database_config):
