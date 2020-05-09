@@ -8,18 +8,6 @@ class PgAPI(object):
                                            user=user,
                                            password=password)
 
-    def set_city(self, data):
-        """data = {chat_id: int, city: str}"""
-        pass
-
-    def set_preferences(self, data):
-        """data = {chat_id: int, category: str}"""
-        pass
-
-    def get_event(self, data):
-        """data = {chat_id: int}"""
-        pass
-
     def init_tables(self):
         """Функция для создания таблиц в базе данных"""
         cur = self.connection.cursor()
@@ -181,6 +169,45 @@ class PgAPI(object):
                     WHERE finish_datetime < CURRENT_TIMESTAMP;
                     ''')
         self.connection.commit()
+
+    def get_user_categories(self, user_id):
+        """Получить массив индексов категорий пользователя"""
+        cur = self.connection.cursor()
+        cur.execute('''
+                    SELECT categories From Users
+                    WHERE telegram_id=%s
+                    ''', (user_id,))
+        categories = cur.fetchone()
+        return categories[0] if categories else []
+
+    def set_user_category(self, user_id, category):
+        """Задать новую категорию пользователю"""
+        old_categories = self.get_user_categories(user_id)
+        new_category = self.find_category(category)
+        if new_category not in old_categories:
+            cur = self.connection.cursor()
+            cur.execute('''
+                        UPDATE TABLE Users
+                        SET category=%s WHERE telegram_id=%s
+                        ''', (new_category, user_id))
+            self.connection.commit()
+            return True
+        else:
+            return False
+
+    def set_user_city(self, user_id, city_name):
+        """data = {chat_id: int, city: str}"""
+        city_id = self.find_city(city_name)
+        cur = self.connection.cursor()
+        cur.execute('''
+                     UPDATE TABLE Users
+                     SET city_id=%s WHERE telegram_id=%s
+                     ''', (city_id, user_id))
+        self.connection.commit()
+
+    def send_user_event(self, data):
+        """data = {chat_id: int}"""
+        pass
 
 
 def init_db(database_config):
