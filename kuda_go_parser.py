@@ -76,9 +76,12 @@ def start_parsing(db):
         data = find_events(categories_ev, size, city)
         print(data)
         for event in data:
-            place_data = get_place(event["place"]["id"])
-            db.add_event(event["title"], event["location"],
-                         place_data["title"], event["site_url"],
-                         event["dates"][0])
-            db.add_place(place_data["title"], place_data["address"],
-                         place_data["location"])
+            try:
+                place_data = get_place(event["place"]["id"])
+                db.add_event(event["title"], event["location"]['slug'],
+                             place_data["title"], event["site_url"],
+                             event["dates"][0]['start'])
+                #db.add_place(place_data["title"], place_data["address"],
+                #             place_data["location"])
+            except Exception as e:
+                print(e)

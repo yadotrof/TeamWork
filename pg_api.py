@@ -1,5 +1,5 @@
 import psycopg2
-
+from datetime import datetime as dtm
 
 class PgAPI(object):
     def __init__(self, database, user, password=""):
@@ -38,7 +38,7 @@ class PgAPI(object):
 
             CREATE TABLE Events
             (id SERIAL PRIMARY KEY,
-            name VARCHAR(40) NOT NULL CONSTRAINT Events_unique_name UNIQUE,
+            name VARCHAR(100) NOT NULL CONSTRAINT Events_unique_name UNIQUE,
             city_id INT REFERENCES Cities(id),
             place_id INT REFERENCES Places(id),
             url TEXT,
@@ -65,13 +65,17 @@ class PgAPI(object):
         """Добавление Места в базу данных.
         address: str
         """
-        cur = self.connection.cursor()
-        city_id = self.find_city(city_name)
-        cur.execute('''
-                    INSERT INTO Places (name, city_id, address) 
-                    VALUES (%s, %s, %s);
-                    ''', (name, city_id, address))
-        self.connection.commit()
+        try:
+            cur = self.connection.cursor()
+            city_id = self.find_city(city_name)
+            cur.execute('''
+                        INSERT INTO Places (name, city_id, address) 
+                        VALUES (%s, %s, %s);
+                        ''', (name, city_id, address))
+            self.connection.commit()
+        except Exception as e:
+            print('places', e)
+            self.connection.rollback()
 
     def add_event(self, name, city_name=None, place_name=None,
                   url=None, datetime=None):
@@ -79,15 +83,20 @@ class PgAPI(object):
         url: str
         datetime: datetime
         """
+
         cur = self.connection.cursor()
-        city_id = self.find_city(city_name)
-        place_id = self.find_place(place_name)
+        city_id = self.find_city(city_name) if city_name else None
+        place_id = self.find_place(place_name) if place_name else None
+        datetime = dtm.fromtimestamp(datetime) if datetime else None
         cur.execute('''
                     INSERT INTO Events 
                     (name, city_id, place_id, url, datetime) 
                     VALUES (%s, %s, %s, %s, %s);
                     ''', (name, city_id, place_id, url, datetime))
         self.connection.commit()
+        print("OK")
+
+
 
     def find_city(self, city_name):
         """Поиск id города по названию"""
@@ -111,3 +120,10 @@ class PgAPI(object):
         cur.execute('''DELETE FROM Events WHERE datetime < CURRENT_TIMESTAMP;
                     ''')
         self.connection.commit()
+
+    def get_events(self):
+        cur = self.connection.cursor()
+        cur.execute('''SELECT * FROM Events WHERE datetime > CURRENT_TIMESTAMP; 
+                    ''')
+        events = cur.fetchall()
+        return events
