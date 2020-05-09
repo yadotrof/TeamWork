@@ -140,3 +140,18 @@ class TelegramAPI(BotAPI):
     def clean_command(self, data):
         # почистить выбранные категории пользователя в бд
         self.categories_command(data)
+
+    def subscribe_command(self, data):
+        # изменить полу подписки в базе
+        self.categories_command(data)
+        text = "Поздравялем, теперь тебе будет приходить подборка " \
+               "меропирятий и ты ничего не пропустишь "
+        return text
+
+    def unsubscribe_command(self, data):
+        # изменить полу подписки в базе
+        self.categories_command(data)
+        text = "Ты отписался, но все равно можешь посмотреть, куда " \
+               "сходить, просто нажми /find или /help - чтобы " \
+               "посмотреть все команды"
+        return text

@@ -15,12 +15,6 @@ async def command_cmd_handler(message: types.Message):
     await message.reply(response, reply_markup=keyboard_markup)
 
 
-@dp.message_handler(commands='subscribe')
-async def command_cmd_handler(message: types.Message):
-    response = TelegramAPI.start_command(message)
-    await message.reply(response)
-
-
 @dp.message_handler(commands='start')
 async def command_cmd_handler(message: types.Message):
     response = TelegramAPI.start_command(message)
@@ -65,6 +59,17 @@ async def inline_answer_callback_handler(query: types.CallbackQuery):
     response = TelegramAPI.process_callback(query)
     await bot.send_message(query.from_user.id, response)
 
+
+@dp.message_handler(commands='subscribe')
+async def command_cmd_handler(message: types.Message):
+    response = TelegramAPI.subscribe_command(message)
+    await message.reply(response)
+
+
+@dp.message_handler(commands='unsubscribe')
+async def command_cmd_handler(message: types.Message):
+    response = TelegramAPI.unsubscribe_command(message)
+    await message.reply(response)
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
