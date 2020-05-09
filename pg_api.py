@@ -1,4 +1,5 @@
 import psycopg2
+from config import DB_CONFIG
 
 
 class PgAPI(object):
@@ -26,29 +27,33 @@ class PgAPI(object):
         cur.execute('''
             CREATE TABLE Cities
             (id SERIAL PRIMARY KEY,
-            name VARCHAR(40) NOT NULL CONSTRAINT Cities_unique_name UNIQUE
+            name VARCHAR(40) NOT NULL CONSTRAINT Cities_unique_name UNIQUE,
+            parser_tag VARCHAR(40) NOT NULL CONSTRAINT Tag_unique_name UNIQUE
             );
 
             CREATE TABLE Places
             (id SERIAL PRIMARY KEY,
-            name VARCHAR(40) NOT NULL CONSTRAINT Places_unique_name UNIQUE,
+            name VARCHAR(100) NOT NULL CONSTRAINT Places_unique_name UNIQUE,
             city_id INT REFERENCES Cities(id),
             address VARCHAR(60) NOT NULL
             );
 
             CREATE TABLE Events
             (id SERIAL PRIMARY KEY,
-            name VARCHAR(40) NOT NULL CONSTRAINT Events_unique_name UNIQUE,
+            name VARCHAR(100) NOT NULL CONSTRAINT Events_unique_name UNIQUE,
+            categories VARCHAR(20)[],
             city_id INT REFERENCES Cities(id),
             place_id INT REFERENCES Places(id),
             url TEXT,
-            datetime TIMESTAMP
+            start_datetime TIMESTAMP,
+            finish_datetime TIMESTAMP 
             );
-            
+
             CREATE TABLE Users
             (id SERIAL PRIMARY KEY,
             telegram_id INT NOT NULL CONSTRAINT Users_unique_chat_id UNIQUE,
-            city_id INT REFERENCES Cities(id)
+            city_id INT REFERENCES Cities(id),
+            categories VARCHAR(20)[]
             );
 
             CREATE TABLE Messages
@@ -66,38 +71,59 @@ class PgAPI(object):
         address: str
         """
         cur = self.connection.cursor()
-        city_id = self.find_city(city_name)
-        cur.execute('''
-                    INSERT INTO Places (name, city_id, address) 
-                    VALUES (%s, %s, %s);
-                    ''', (name, city_id, address))
-        self.connection.commit()
+        city_id = self.find_city(city_name) if city_name else None
+        try:
+            cur.execute('''
+                        INSERT INTO Places (name, city_id, address) 
+                        VALUES (%s, %s, %s);
+                        ''', (name, city_id, address))
+            self.connection.commit()
+        except psycopg2.errors.UniqueViolation:
+            self.connection.rollback()
 
-    def add_event(self, name, city_name=None, place_name=None,
-                  url=None, datetime=None):
+    def add_event(self, name, categories,
+                  finish_datetime, start_datetime=None,
+                  city_name=None, place_name=None, url=None):
         """Добавление События в базу данных.
         url: str
         datetime: datetime
         """
         cur = self.connection.cursor()
-        city_id = self.find_city(city_name)
-        place_id = self.find_place(place_name)
-        cur.execute('''
-                    INSERT INTO Events 
-                    (name, city_id, place_id, url, datetime) 
-                    VALUES (%s, %s, %s, %s, %s);
-                    ''', (name, city_id, place_id, url, datetime))
-        self.connection.commit()
+        city_id = self.find_city(city_name) if city_name else None
+        place_id = self.find_place(place_name) if place_name else None
+        try:
+            cur.execute('''
+                        INSERT INTO Events
+                        (name, categories, city_id, place_id, url, 
+                        start_datetime, finish_datetime)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s);
+                        ''', (name, categories, city_id, place_id, url,
+                              start_datetime, finish_datetime))
+            self.connection.commit()
+        except psycopg2.errors.UniqueViolation:
+            self.connection.rollback()
+
+    def add_city(self, name, tag):
+        cur = self.connection.cursor()
+        try:
+            cur.execute('''
+                        INSERT INTO Cities
+                        (name, parser_tag)
+                        VALUES (%s, %s);
+                        ''', (name, tag))
+            self.connection.commit()
+        except psycopg2.errors.UniqueViolation:
+            self.connection.rollback()
 
     def find_city(self, city_name):
         """Поиск id города по названию"""
         cur = self.connection.cursor()
         cur.execute('''
                     SELECT id FROM Cities WHERE name = %s
-                    ''', (city_name, ))
+                    ''', (city_name,))
         city_id = cur.fetchone()
         return city_id[0] if city_id else None
-    
+
     def find_place(self, place_name):
         """Поиск id места по названию"""
         cur = self.connection.cursor()
@@ -108,6 +134,17 @@ class PgAPI(object):
 
     def delete_old_events(self):
         cur = self.connection.cursor()
-        cur.execute('''DELETE FROM Events WHERE datetime < CURRENT_TIMESTAMP;
+        cur.execute('''
+                    DELETE FROM Events 
+                    WHERE datetime < CURRENT_TIMESTAMP;
                     ''')
         self.connection.commit()
+
+
+def init_db(database_config):
+    db = PgAPI(**database_config)
+    db.init_tables()
+
+
+if __name__ == '__main__':
+    init_db(DB_CONFIG)
