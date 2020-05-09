@@ -15,6 +15,22 @@ async def command_cmd_handler(message: types.Message):
     await message.reply(response, reply_markup=keyboard_markup)
 
 
+@dp.callback_query_handler(text='cinema')
+@dp.callback_query_handler(text='stand-up')
+@dp.callback_query_handler(text='festival')
+@dp.callback_query_handler(text='concert')
+async def inline_answer_callback_handler(query: types.CallbackQuery):
+    response = TelegramAPI.categories_command(query)
+    await bot.send_message(query.from_user.id, response)
+
+
+@dp.callback_query_handler(text='msk')
+@dp.callback_query_handler(text='spb')
+async def inline_answer_callback_handler(query: types.CallbackQuery):
+    response = TelegramAPI.categories_command(query)
+    await bot.send_message(query.from_user.id, response)
+
+
 @dp.callback_query_handler()
 async def inline_answer_callback_handler(query: types.CallbackQuery):
     response = TelegramAPI.process_callback(query)

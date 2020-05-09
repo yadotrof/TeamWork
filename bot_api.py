@@ -74,8 +74,7 @@ class TelegramAPI(BotAPI):
         text = 'привет, я бот, который подскажет, куда тебе сходить ' \
                'в свободное время, для начала расскажи о себе ' \
                '/registration ^^ '
-
-        self.set_subscriber(data.from_user)
+        self.db.add_user(data.from_user)
 
     @staticmethod
     def registration_command(data):
@@ -98,12 +97,6 @@ class TelegramAPI(BotAPI):
     def process_callback(self, query):
         answer_data = query.data
         bot_callback = {
-            'msk': 'process_city',
-            'spb': 'process_city',
-            'cinema': 'process_categories',
-            'festival': 'process_categories',
-            'concert': 'process_categories',
-            'stand-up': 'process_categories',
             'find': 'find_command',
             'clean': 'clean_command'
         }
@@ -121,7 +114,7 @@ class TelegramAPI(BotAPI):
         # TODO нужна функция на вытащить доступные категории из базы
         # запрос на те которые выбраны у пользователя
         # разница между ними- то из чего предлагаем выбирать
-
+        user_tags = self.db.get_user_categories(data.from_user.id)
         text = f'Сейчас у тебя выбраны:__ЗАПРОС_К_БД'
         # 'отметь другие категории или нажми /find и мы найдем' \
         # 'что нибудь по этим'
@@ -142,6 +135,7 @@ class TelegramAPI(BotAPI):
     def process_categories(self, data):
         # TODO нужен метод на вытащить ссылки событий из базы
         # добавляем выбранную категорию у списку пользвателя
+        self.db.set_user_category(data)
         self.categories_command(data)
 
     @staticmethod
