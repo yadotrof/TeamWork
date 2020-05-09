@@ -1,3 +1,4 @@
+import pickle
 from abc import ABC, abstractmethod
 from pg_api import PgAPI
 from aiogram import types
@@ -57,24 +58,13 @@ class TelegramAPI(BotAPI):
         converted_data = self.convert_data(data)
         self.db.get_event(converted_data)
 
-    def process_message(self, message):
-        # TODO что там с обработкой данных convert_data ??
-        bot_commands = {
-            'help': 'help_command',
-            'start': 'start_command',
-            'registration': 'registration_command',
-            'categories': 'categories_command',
-            'find': 'find_command'
-        }
-        func = bot_commands.get(message.get_command(),
-                                lambda: "Я пока не знаю такой команды")
-        return func(self, message)
-
     def start_command(self, data):
-        text = 'привет, я бот, который подскажет, куда тебе сходить ' \
+        text = f'Привет, {data.from_user.username} я бот, который ' \
+               'подскажет, куда тебе сходить ' \
                'в свободное время, для начала расскажи о себе ' \
                '/registration ^^ '
-        self.db.add_user(data.from_user)
+        self.db.add_user(data.from_user.id)
+        return text
 
     @staticmethod
     def registration_command(data):
@@ -106,20 +96,20 @@ class TelegramAPI(BotAPI):
 
     def process_city(self, data):
         self.set_city(data)
-        text = "давай посмотрим, что ты больше любишь /categories"
+        text = "давай посмотрим, что ты любишь /categories"
         return text
 
     @staticmethod
-    def categories_command(self, data):
-        # TODO нужна функция на вытащить доступные категории из базы
-        # запрос на те которые выбраны у пользователя
-        # разница между ними- то из чего предлагаем выбирать
-        user_tags = self.db.get_user_categories(data.from_user.id)
-        text = f'Сейчас у тебя выбраны:__ЗАПРОС_К_БД'
-        # 'отметь другие категории или нажми /find и мы найдем' \
-        # 'что нибудь по этим'
+    def categories_command(self, query):
+        with open('categories', 'r') as f:
+            categories_ev = pickle.load(f)
 
+        user_tags = self.db.get_user_categories(query.from_user.id)
+        cat = ', '.join(self.db.get_category_name(user_tag) for user_tag in user_tags)
+        text = f'Сейчас у тебя выбраны:{cat}'
         keyboard_markup = types.InlineKeyboardMarkup(row_width=6)
+        # categories = (category["slug"], category["name"] for category
+        # in categories_ev if category["name"] not in)
         categories = (('Кино', 'cinema'),
                       ('Стенд-ап', 'stand-up'),
                       ('Концерт', 'concert'),
@@ -133,16 +123,13 @@ class TelegramAPI(BotAPI):
         return text, keyboard_markup
 
     def process_categories(self, data):
-        # TODO нужен метод на вытащить ссылки событий из базы
-        # добавляем выбранную категорию у списку пользвателя
-        self.db.set_user_category(data)
-        self.categories_command(data)
+        self.db.set_user_category(data.data)
 
     @staticmethod
     def help_command(self):
         text = 'Для начала работы /start\nДля выбора города' \
                ' /registration\nДля настройки категорий ' \
-               '/categories\n'
+               '/categories\nДля поиска /find'
         return text
 
     def find_command(self, data):
