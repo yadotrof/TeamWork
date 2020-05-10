@@ -26,10 +26,16 @@ class PgAPI(object):
             address VARCHAR(60) NOT NULL
             );
 
+           CREATE TABLE Categories
+            (id SERIAL PRIMARY KEY,
+            name VARCHAR(40) NOT NULL CONSTRAINT Categories_unique_name UNIQUE,
+            tag VARCHAR(10) NOT NULL CONSTRAINT Categories_unique_tag UNIQUE
+            );
+
             CREATE TABLE Events
             (id SERIAL PRIMARY KEY,
             name VARCHAR(100) NOT NULL CONSTRAINT Events_unique_name UNIQUE,
-            category INT,
+            category INT REFERENCES Categories(id) ON DELETE SET NULL,
             city_id INT REFERENCES Cities(id) ON DELETE SET NULL,
             place_id INT REFERENCES Places(id) ON DELETE SET NULL,
             url TEXT,
@@ -52,11 +58,6 @@ class PgAPI(object):
             content TEXT NOT NULL,
             time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
-            CREATE TABLE Categories
-            (id SERIAL PRIMARY KEY,
-            name VARCHAR(40) NOT NULL CONSTRAINT Categories_unique_name UNIQUE,
-            tag VARCHAR(10) NOT NULL CONSTRAINT Categories_unique_tag UNIQUE
-            )
         ''')
         self.connection.commit()
 
@@ -289,6 +290,10 @@ class PgAPI(object):
                     SET categories=%s WHERE telegram_id=%s
                     ''', ([], user_id))
         self.connection.commit()
+        if cur.statusmessage[-1] == '0':
+            return False
+        else:
+            return True
 
     def set_user_city(self, user_id, city_name):
         """Задаёт город пользователя"""
