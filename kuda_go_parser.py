@@ -56,20 +56,21 @@ def find_events(categories, size, location, time_start, time_end):
           "&categories=" + categories + "&lon=&lat=&radius="
     request = requests.get(url).text
     logging.debug(request)
-    json_events = json.loads(request)["results"]
+    json_events = json.loads(request)
 
     return json_events
 
 
 def start_parsing(db):
     """заполняем базу данными"""
-    categories_ev = "cinema"
-    # ,stand-up,business-events,concert,festival,party,theater"
-    """
-    TODO
-    не хочет сразу все категории, цикл тройной вложенности- больно
-    на сл неделе что-нибудь придумаю
-    """
+    categories_ev = [{"tag": "business-events",
+                      "name": "События для бизнеса"},
+                     {"tag": "cinema", "name": "Кино"},
+                     {"tag": "concert", "name": "Концерты"},
+                     {"tag": "exhibition", "name": "Выставки"},
+                     {"tag": "festival", "name": "Фестивали"},
+                     {"tag": "stand-up", "name": "Стенд-ап"},
+                     {"tag": "party", "name": "Вечеринки"}]
 
     cities = [
         {'name': 'Москва',
@@ -84,26 +85,31 @@ def start_parsing(db):
     time_end = time_end.timestamp()
     for city in cities:
         db.add_city(**city)
-        data = find_events(categories_ev, size,
-                           city['tag'], time_start, time_end)
-        for event in data:
-            # Но вообще надо сделать нормально выбор категорий
-            category = {'name': "Кино", 'tag': 'cinema'}
-            if event['place']:
-                place_data = get_place(event["place"]["id"])
-            else:
-                place_data = None
-            db.add_event(name=event["title"],
-                         category=category,
-                         finish_datetime=datetime.fromtimestamp(
-                             event["dates"][0]['end']),
-                         start_datetime=datetime.fromtimestamp(
-                             event["dates"][0]['start']),
-                         city_name=city['name'],
-                         place_name=place_data["title"] if place_data
-                         else None,
-                         url=event["site_url"])
-            if place_data:
-                db.add_place(name=(place_data["title"]),
-                             address=place_data["address"],
-                             city_name=city['name'])
+
+        for category in categories_ev:
+            data = find_events(category["tag"], size,
+                               city['tag'], time_start, time_end)
+            print(data)
+            for event in data:
+                # Но вообще надо сделать нормально выбор категорий
+                # category = {'name': "Кино", 'tag': 'cinema'}
+                if event['place']:
+                    place_data = get_place(event["place"]["id"])
+                else:
+                    place_data = None
+                db.add_event(name=event["title"],
+                             category=category,
+                             finish_datetime=datetime.fromtimestamp(
+                                 event["dates"][0]['end']),
+                             start_datetime=datetime.fromtimestamp(
+                                 event["dates"][0]['start']),
+                             city_name=city['name'],
+                             place_name=place_data["title"] if place_data
+                             else None,
+                             url=event["site_url"])
+                if place_data:
+                    db.add_place(name=(place_data["title"]),
+                                 address=place_data["address"],
+                                 city_name=city['name'])
+
+
