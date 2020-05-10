@@ -29,7 +29,7 @@ class PgAPI(object):
             CREATE TABLE Events
             (id SERIAL PRIMARY KEY,
             name VARCHAR(100) NOT NULL CONSTRAINT Events_unique_name UNIQUE,
-            categories INT[],
+            category INT,
             city_id INT REFERENCES Cities(id),
             place_id INT REFERENCES Places(id),
             url TEXT,
@@ -97,28 +97,27 @@ class PgAPI(object):
         except psycopg2.errors.UniqueViolation:
             self.connection.rollback()
 
-    def add_event(self, name, categories,
+    def add_event(self, name, category,
                   finish_datetime, start_datetime=None,
                   city_name=None, place_name=None, url=None):
         """Добавление События в базу данных.
         url: str
         datetime: datetime
         """
-        for category in categories:
-            self.add_category(category['name'], category['tag'])
+        self.add_category(category['name'], category['tag'])
+
         cur = self.connection.cursor()
         city_id = self.find_city(city_name) if city_name else None
         place_id = self.find_place(place_name) if place_name else None
+        category_id = self.find_category(category['name'])
 
-        categories_ids = [self.find_category(category['name'])
-                          for category in categories]
         try:
             cur.execute('''
                         INSERT INTO Events
-                        (name, categories, city_id, place_id, url, 
+                        (name, category, city_id, place_id, url, 
                         start_datetime, finish_datetime)
                         VALUES (%s, %s, %s, %s, %s, %s, %s);
-                        ''', (name, categories_ids, city_id, place_id, url,
+                        ''', (name, category_id, city_id, place_id, url,
                               start_datetime, finish_datetime))
             self.connection.commit()
         except psycopg2.errors.UniqueViolation:
@@ -234,9 +233,33 @@ class PgAPI(object):
                      ''', (city_id, user_id))
         self.connection.commit()
 
-    def send_user_event(self, data):
-        """data = {chat_id: int}"""
-        pass
+
+    def send_user_events(self, user_id, count=1):
+        """Функция, которая возвращает пользователю события
+        Возвращает n случайных событий из категорий
+        которые выбраны у пользователя.
+        Если у пользователя не стоят категории, вернуть False
+        Если не найдены события, вернуть []
+        """
+        cur = self.connection.cursor()
+        cur.execute('''
+                    SELECT categories From Users
+                    WHERE telegram_id=%s
+                    ''', (user_id,))
+        categories = cur.fetchone()
+        print(categories)
+        if not categories:
+            return False
+        events = []
+        for category in categories[0]:
+            cur.execute('''
+                        SELECT * From Events
+                        WHERE category <> %s
+                        ''', (category,))
+            category_events = cur.fetchall()
+            for event in category_events:
+                events.add(event)
+        return events
 
     def set_user_subscribed(self, user_id):
         """Подписать пользователя на рассылку"""
