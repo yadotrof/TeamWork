@@ -18,7 +18,7 @@ def get_event(event_id):
           f"{event_id}/?lang=&fields{fields}=&expand="
     request = requests.get(url).text
     logging.debug(request)
-    json_event = json.loads(request)["results"]
+    json_event = json.loads(request).get("results", None)
 
     return json_event
 
@@ -30,7 +30,8 @@ def get_place(place_id):
           f"?lang=&fields={fields}&expand="
     request = requests.get(url).text
     logging.debug(request)
-    json_place = json.loads(request)["results"]
+    print(request)
+    json_place = json.loads(request).get("results", None)
 
     return json_place
 
@@ -56,7 +57,8 @@ def find_events(categories, size, location, time_start, time_end):
           "&categories=" + categories + "&lon=&lat=&radius="
     request = requests.get(url).text
     logging.debug(request)
-    json_events = json.loads(request)["results"]
+    print(request)
+    json_events = json.loads(request).get("results", None)
 
     return json_events
 
@@ -85,8 +87,12 @@ def start_parsing(db):
         db.add_city(**city)
 
         for category in categories_ev:
+            logging.debug("Finding category", category['name'])
             data = find_events(category["tag"], size,
                                city['tag'], time_start, time_end)
+            if not data:
+                logging.debug("No data was found for {} category".format(category['name']))
+                continue
             for event in data:
                 # Но вообще надо сделать нормально выбор категорий
                 # category = {'name': "Кино", 'tag': 'cinema'}
