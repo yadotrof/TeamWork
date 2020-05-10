@@ -1,4 +1,5 @@
 import json
+import random
 from datetime import datetime, timedelta
 import requests
 import logging
@@ -69,8 +70,8 @@ def start_parsing(db):
                      {"tag": "concert", "name": "Концерты"},
                      {"tag": "exhibition", "name": "Выставки"},
                      {"tag": "festival", "name": "Фестивали"},
-                     {"tag": "stand-up", "name": "Стенд-ап"},
                      {"tag": "party", "name": "Вечеринки"}]
+    random.shuffle(categories_ev)
 
     cities = [
         {'name': 'Москва',
@@ -91,7 +92,8 @@ def start_parsing(db):
             data = find_events(category["tag"], size,
                                city['tag'], time_start, time_end)
             if not data:
-                logging.debug("No data was found for {} category".format(category['name']))
+                logging.debug("No data was found for {} category".
+                              format(category['name']))
                 continue
             for event in data:
                 # Но вообще надо сделать нормально выбор категорий

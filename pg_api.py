@@ -322,9 +322,9 @@ class PgAPI(object):
                         WHERE category <> %s
                         ''', (category,))
             category_events = cur.fetchall()
-            for event in category_events:
-                events.add(event)
-        return events
+            # for event in category_events:
+            #    events.add(event)
+        return category_events
 
     def set_user_subscribed(self, user_id):
         """Подписать пользователя на рассылку"""

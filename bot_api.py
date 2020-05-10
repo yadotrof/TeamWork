@@ -25,6 +25,7 @@ class BotAPI(ABC):
 
 class TelegramAPI(BotAPI):
     """Контроллер телеграм бот <-> БД"""
+
     def __init__(self, config):
         self.db = PgAPI(**config)
 
@@ -90,7 +91,7 @@ class TelegramAPI(BotAPI):
         # with open('categories', 'r') as f:
         #    categories_ev = pickle.load(f)
         user_tags = self.db.get_user_categories(query.from_user.id)
-        if(user_tags == [[None]]):
+        if (user_tags == [[None]]):
             text = 'У тебя пока ничего не выбрано, отметь что-нибудь'
         else:
             cat = ', '.join(str(self.db.get_category_name(user_tag))
@@ -100,7 +101,6 @@ class TelegramAPI(BotAPI):
         # categories = (category["slug"], category["name"] for category
         # in categories_ev if category["name"] not in)
         categories = [['Кино', 'cinema'],
-                      ['Стенд-ап', 'stand-up'],
                       ['Концерт', 'concert'],
                       ['Фестивали', 'festival'],
                       ['Выставки', 'exhibition'],
@@ -109,7 +109,7 @@ class TelegramAPI(BotAPI):
                       ['Сбросить все выбранные', 'clean']]
 
         row_btns = (types.InlineKeyboardButton(text, callback_data=data)
-                   for text, data in categories)
+                    for text, data in categories)
         for btn in row_btns:
             keyboard_markup.add(btn)
 
@@ -131,8 +131,9 @@ class TelegramAPI(BotAPI):
     def find_command(self, data):
         """Метод обрабатывающий команду find"""
         text = "Смотри, куда можно сходить: \n"
-        events = self.db.send_user_events(data.from_user.id, 5)
-        return text + "\n".join(event[6] for event in events)
+        events = self.db.send_user_events(data.from_user.id)
+        print(events)
+        return text + "\n".join(event[5] for event in events)
 
     def clean_command(self, data):
         """Метод обрабатывающий команду clean"""
