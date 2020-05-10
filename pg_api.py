@@ -145,6 +145,10 @@ class PgAPI(object):
             self.connection.rollback()
 
     def add_city(self, name, tag):
+        """Добавление города в базу данных.
+        name: str
+        tag: str
+        """
         cur = self.connection.cursor()
         try:
             cur.execute('''
@@ -157,6 +161,7 @@ class PgAPI(object):
             self.connection.rollback()
 
     def add_category(self, name, tag):
+        """Добавление категории в базу данных."""
         cur = self.connection.cursor()
         try:
             cur.execute('''
@@ -219,6 +224,7 @@ class PgAPI(object):
         return category_id[0] if category_id else None
 
     def delete_old_events(self):
+        """удаление неактуальных(прошедших) событий из бд"""
         cur = self.connection.cursor()
         cur.execute('''
                     DELETE FROM Events

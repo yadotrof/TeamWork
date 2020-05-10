@@ -24,6 +24,7 @@ class BotAPI(ABC):
 
 
 class TelegramAPI(BotAPI):
+    """Контроллер телеграм бот <-> БД"""
     def __init__(self, config):
         self.db = PgAPI(**config)
 
@@ -78,13 +79,15 @@ class TelegramAPI(BotAPI):
         return 0
 
     def process_city(self, query):
+        """Метод заполняющий поле user.city в бд"""
         self.db.set_user_city(query.from_user.id, query.data)
         text = "давай посмотрим, что ты любишь /categories"
         return text
 
     @staticmethod
     def categories_command(self, query):
-        # with open('categories', 'rb') as f:
+        """Метод обрабатывающий команду categories"""
+        # with open('categories', 'r') as f:
         #    categories_ev = pickle.load(f)
         user_tags = self.db.get_user_categories(query.from_user.id)
         print(user_tags)
@@ -111,10 +114,12 @@ class TelegramAPI(BotAPI):
         return text, keyboard_markup
 
     def process_categories(self, query):
+        """Метод заполняющий поле user.categories в бд"""
         self.db.set_user_category(query.from_user.id, query.data)
 
     @staticmethod
     def help_command():
+        """Метод обрабатывающий команду help"""
         text = 'Для начала работы /start\nДля выбора города' \
                ' /registration\nДля настройки категорий ' \
                '/categories\nДля поиска /find\nЧтобы подписаться' \
@@ -122,17 +127,20 @@ class TelegramAPI(BotAPI):
         return text
 
     def find_command(self, data):
+        """Метод обрабатывающий команду find"""
         text = "Смотри, куда можно сходить\n"
         events = self.db.send_user_events(data.from_user.id)
         return text + "\n".join(events)
 
     def clean_command(self, data):
+        """Метод обрабатывающий команду clean"""
         # почистить выбранные категории пользователя в бд
         self.db.clear_user_categories(data.from_user.id)
         text = "Теперь можешь выбрать новые\n"
         return text
 
     def subscribe_command(self, data):
+        """Метод обрабатывающий команду subscribe"""
         # изменить полу подписки в базе
         self.db.set_user_subscribed(data.from_user.id)
         text = "Поздравялем, теперь тебе будет приходить подборка " \
@@ -140,6 +148,7 @@ class TelegramAPI(BotAPI):
         return text
 
     def unsubscribe_command(self, data):
+        """Метод обрабатывающий команду unsubscribe"""
         # изменить полу подписки в базе
         self.db.clear_user_subscribed(data.from_user.id)
         text = "Ты отписался, но все равно можешь посмотреть, куда " \
