@@ -354,6 +354,15 @@ class PgAPI(object):
             self.connection.commit()
             return True
 
+    def get_event(self, id):
+        """Возвращает одно событие из базы"""
+        cur = self.connection.cursor()
+        cur.execute('''
+                     SELECT * From Events
+                     WHERE id=%s
+                     ''', (id,))
+        return cur.fetchall()
+
 
 def init_db(database_config):
     """Функция для вызова инициализации таблиц в бд"""

@@ -31,7 +31,6 @@ def get_place(place_id):
           f"?lang=&fields={fields}&expand="
     request = requests.get(url).text
     logging.debug(request)
-    print(request)
     json_place = json.loads(request).get("results", None)
 
     return json_place
@@ -58,7 +57,6 @@ def find_events(categories, size, location, time_start, time_end):
           "&categories=" + categories + "&lon=&lat=&radius="
     request = requests.get(url).text
     logging.debug(request)
-    print(request)
     json_events = json.loads(request).get("results", None)
 
     return json_events
