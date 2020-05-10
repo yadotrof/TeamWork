@@ -210,6 +210,14 @@ class PgAPI(object):
         category_id = cur.fetchone()
         return category_id[0] if category_id else None
 
+    def find_category_by_tag(self, tag):
+        """Нахождение id категории по тэгу"""
+        cur = self.connection.cursor()
+        cur.execute('''SELECT id FROM Categories WHERE tag = %s
+                    ''', (tag,))
+        category_id = cur.fetchone()
+        return category_id[0] if category_id else None
+
     def delete_old_events(self):
         cur = self.connection.cursor()
         cur.execute('''
@@ -247,10 +255,10 @@ class PgAPI(object):
         categories = cur.fetchone()
         return [categories[0]][0] if categories[0] else []
 
-    def set_user_category(self, user_id, category):
-        """Задать новую категорию пользователю"""
+    def set_user_category(self, user_id, category_tag):
+        """Добавляет новую категорию пользователю"""
         old_categories = self.get_user_categories(user_id)
-        new_category = self.find_category(category)
+        new_category = self.find_category_by_tag(category_tag)
         if new_category and new_category not in old_categories:
             old_categories.append(new_category)
             cur = self.connection.cursor()
@@ -262,6 +270,15 @@ class PgAPI(object):
             return True
         else:
             return False
+
+    def clear_user_categories(self, user_id):
+        """Удаляет все выбранные категории пользователя"""
+        cur = self.connection.cursor()
+        cur.execute('''
+                    UPDATE Users
+                    SET categories=%s WHERE telegram_id=%s
+                    ''', ([], user_id))
+        self.connection.commit()
 
     def set_user_city(self, user_id, city_name):
         """data = {chat_id: int, city: str}"""

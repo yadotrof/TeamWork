@@ -51,7 +51,7 @@ class TestStringMethods(unittest.TestCase):
         self.assertTrue(self.db.add_category(category['name'],
                                              category['tag']))
         self.assertTrue(self.db.set_user_category(user_tg_id,
-                                                  category['name']))
+                                                  category['tag']))
         self.assertEqual(self.db.get_category_name(
             self.db.get_user_categories(user_tg_id)[0]), 'Кино')
         self.assertFalse(self.db.set_user_category(user_tg_id,
