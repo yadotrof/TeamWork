@@ -1,6 +1,7 @@
 import unittest
 from pg_api import PgAPI
 from config import TEST_DB_CONFIG
+import os
 
 
 class TestStringMethods(unittest.TestCase):
@@ -8,7 +9,6 @@ class TestStringMethods(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.db = PgAPI(**TEST_DB_CONFIG)
-        self.db.clear_data()
 
     def test_user_creation(self):
         """Тестирование добавление и удаления пользователя"""
@@ -61,4 +61,11 @@ class TestStringMethods(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    os.system('psql -U postgres -d postgres -c '
+              '"DROP DATABASE IF EXISTS {};"'.format(
+                                        TEST_DB_CONFIG['database']))
+    os.system('psql -U postgres -d postgres -c '
+              '"CREATE DATABASE {};"'.format(
+                                        TEST_DB_CONFIG['database']))
+    PgAPI(**TEST_DB_CONFIG).init_tables()
     unittest.main()

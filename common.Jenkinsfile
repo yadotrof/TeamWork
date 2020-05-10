@@ -8,5 +8,14 @@ pipeline {
                 }
             }
         }
+        stage('Unit tests') {
+            steps{
+                script {
+                    sh('cp config.example config.py')
+                    sh('python3 test.py')
+                }
+            }
+        }
     }
 }
+
