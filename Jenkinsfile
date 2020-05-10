@@ -17,6 +17,15 @@ pipeline {
                 }
             }
         }
+        stage('Requirements') {
+            steps{
+                script {
+                   dir("/home/centos/prod") {
+                        sh "pip3 install -r requirements.txt"
+                    }
+                }
+            }
+        }
         stage('Start') {
             steps{
                 script {
