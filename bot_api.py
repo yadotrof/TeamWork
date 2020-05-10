@@ -63,7 +63,7 @@ class TelegramAPI(BotAPI):
     @staticmethod
     def registration_command(data):
         text = 'Выбери город'
-        keyboard_markup = types.InlineKeyboardMarkup(row_width=2)
+        keyboard_markup = types.InlineKeyboardMarkup(row_width=1)
         text_and_data = (
             ('Moscow', 'msk'),
             ('Saint Petersburg', 'spb'),
@@ -90,26 +90,28 @@ class TelegramAPI(BotAPI):
         # with open('categories', 'r') as f:
         #    categories_ev = pickle.load(f)
         user_tags = self.db.get_user_categories(query.from_user.id)
-        print(user_tags)
         if(user_tags == [[None]]):
             text = 'У тебя пока ничего не выбрано, отметь что-нибудь'
         else:
             cat = ', '.join(str(self.db.get_category_name(user_tag))
                             for user_tag in user_tags)
             text = f'Сейчас у тебя выбраны:{cat}'
-        keyboard_markup = types.InlineKeyboardMarkup()
+        keyboard_markup = types.InlineKeyboardMarkup(row_width=1)
         # categories = (category["slug"], category["name"] for category
         # in categories_ev if category["name"] not in)
-        categories = (('Кино', 'cinema'),
-                      ('Стенд-ап', 'stand-up'),
-                      ('Концерт', 'concert'),
-                      ('Фестиваль', 'festival'),
-                      ('Завершить выбор и начать поиск', 'find'),
-                      ('Сбросить все выбранные', 'clean'))
+        categories = [['Кино', 'cinema'],
+                      ['Стенд-ап', 'stand-up'],
+                      ['Концерт', 'concert'],
+                      ['Фестивали', 'festival'],
+                      ['Выставки', 'exhibition'],
+                      ['Вечеринки', 'party'],
+                      ['Завершить выбор и начать поиск', 'find'],
+                      ['Сбросить все выбранные', 'clean']]
 
-        row_btn = (types.InlineKeyboardButton(text, callback_data=data)
+        row_btns = (types.InlineKeyboardButton(text, callback_data=data)
                    for text, data in categories)
-        keyboard_markup.row(*row_btn)
+        for btn in row_btns:
+            keyboard_markup.add(btn)
 
         return text, keyboard_markup
 
@@ -128,9 +130,9 @@ class TelegramAPI(BotAPI):
 
     def find_command(self, data):
         """Метод обрабатывающий команду find"""
-        text = "Смотри, куда можно сходить\n"
-        events = self.db.send_user_events(data.from_user.id)
-        return text + "\n".join(events)
+        text = "Смотри, куда можно сходить: \n"
+        events = self.db.send_user_events(data.from_user.id, 5)
+        return text + "\n".join(event[6] for event in events)
 
     def clean_command(self, data):
         """Метод обрабатывающий команду clean"""

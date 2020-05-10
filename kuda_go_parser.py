@@ -18,7 +18,7 @@ def get_event(event_id):
           f"{event_id}/?lang=&fields{fields}=&expand="
     request = requests.get(url).text
     logging.debug(request)
-    json_event = json.loads(request)
+    json_event = json.loads(request)["results"]
 
     return json_event
 
@@ -30,7 +30,7 @@ def get_place(place_id):
           f"?lang=&fields={fields}&expand="
     request = requests.get(url).text
     logging.debug(request)
-    json_place = json.loads(request)
+    json_place = json.loads(request)["results"]
 
     return json_place
 
@@ -56,16 +56,14 @@ def find_events(categories, size, location, time_start, time_end):
           "&categories=" + categories + "&lon=&lat=&radius="
     request = requests.get(url).text
     logging.debug(request)
-    json_events = json.loads(request)
+    json_events = json.loads(request)["results"]
 
     return json_events
 
 
 def start_parsing(db):
     """заполняем базу данными"""
-    categories_ev = [{"tag": "business-events",
-                      "name": "События для бизнеса"},
-                     {"tag": "cinema", "name": "Кино"},
+    categories_ev = [{"tag": "cinema", "name": "Кино"},
                      {"tag": "concert", "name": "Концерты"},
                      {"tag": "exhibition", "name": "Выставки"},
                      {"tag": "festival", "name": "Фестивали"},
@@ -89,7 +87,6 @@ def start_parsing(db):
         for category in categories_ev:
             data = find_events(category["tag"], size,
                                city['tag'], time_start, time_end)
-            print(data)
             for event in data:
                 # Но вообще надо сделать нормально выбор категорий
                 # category = {'name': "Кино", 'tag': 'cinema'}
@@ -111,5 +108,3 @@ def start_parsing(db):
                     db.add_place(name=(place_data["title"]),
                                  address=place_data["address"],
                                  city_name=city['name'])
-
-
