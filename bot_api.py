@@ -127,7 +127,7 @@ class TelegramAPI(BotAPI):
     def find_command(self, data):
         """Метод обрабатывающий команду find"""
         text = "Смотри, куда можно сходить: \n"
-        events = self.db.send_user_events(data.from_user.id)
+        events = self.db.send_user_events(data.from_user.id, count=5)
         keyboard_markup = types.InlineKeyboardMarkup(row_width=1)
         row_btns = (types.InlineKeyboardButton(
             str(event[1]), callback_data=str(event[0]))
