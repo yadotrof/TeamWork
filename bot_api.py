@@ -22,6 +22,7 @@ class BotAPI(ABC):
     def get_event(self, data):
         pass
 
+
 class TelegramAPI(BotAPI):
     def __init__(self, config):
         self.db = PgAPI(**config)

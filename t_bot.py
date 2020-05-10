@@ -11,7 +11,6 @@ database_config = DB_CONFIG
 bot_api = TelegramAPI(database_config)
 
 
-
 @dp.message_handler(commands='categories')
 async def command_cmd_handler(message: types.Message):
     response, keyboard_markup = TelegramAPI.categories_command(
@@ -58,7 +57,7 @@ async def inline_answer_callback_handler(query: types.CallbackQuery):
 @dp.callback_query_handler(text='msk')
 @dp.callback_query_handler(text='spb')
 async def inline_answer_callback_handler(query: types.CallbackQuery):
-    response = TelegramAPI.process_city(self=bot_api, query= query)
+    response = TelegramAPI.process_city(self=bot_api, query=query)
     await bot.send_message(query.from_user.id, response)
 
 

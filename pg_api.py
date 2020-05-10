@@ -52,7 +52,6 @@ class PgAPI(object):
             content TEXT NOT NULL,
             time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
-            
             CREATE TABLE Categories
             (id SERIAL PRIMARY KEY,
             name VARCHAR(40) NOT NULL CONSTRAINT Categories_unique_name UNIQUE,
