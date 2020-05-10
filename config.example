@@ -2,4 +2,8 @@ DB_CONFIG = {'database': 'postgres',
              'user': 'postgres',
              'password': ''}
 
+TEST_DB_CONFIG = {'database': 'test_database',
+                  'user': 'postgres',
+                  'password': ''}
+
 TG_TOKEN = '123456789:ThisIsTGToken'
