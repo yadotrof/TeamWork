@@ -22,7 +22,7 @@ class PgAPI(object):
             CREATE TABLE Places
             (id SERIAL PRIMARY KEY,
             name VARCHAR(100) NOT NULL CONSTRAINT Places_unique_name UNIQUE,
-            city_id INT REFERENCES Cities(id),
+            city_id INT REFERENCES Cities(id) ON DELETE SET NULL,
             address VARCHAR(60) NOT NULL
             );
 
@@ -30,8 +30,8 @@ class PgAPI(object):
             (id SERIAL PRIMARY KEY,
             name VARCHAR(100) NOT NULL CONSTRAINT Events_unique_name UNIQUE,
             category INT,
-            city_id INT REFERENCES Cities(id),
-            place_id INT REFERENCES Places(id),
+            city_id INT REFERENCES Cities(id) ON DELETE SET NULL,
+            place_id INT REFERENCES Places(id) ON DELETE SET NULL,
             url TEXT,
             start_datetime TIMESTAMP,
             finish_datetime TIMESTAMP
@@ -40,14 +40,14 @@ class PgAPI(object):
             CREATE TABLE Users
             (id SERIAL PRIMARY KEY,
             telegram_id INT NOT NULL CONSTRAINT Users_unique_chat_id UNIQUE,
-            city_id INT REFERENCES Cities(id),
+            city_id INT REFERENCES Cities(id) ON DELETE SET NULL,
             categories INT[],
             subscribed BOOL DEFAULT False
             );
 
             CREATE TABLE Messages
             (id SERIAL PRIMARY KEY,
-            user_id INT NOT NULL REFERENCES Users(id),
+            user_id INT NOT NULL REFERENCES Users(id) ON DELETE SET NULL,
             type VARCHAR(20) NOT NULL,
             content TEXT NOT NULL,
             time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -78,8 +78,30 @@ class PgAPI(object):
                         INSERT INTO Users (telegram_id) VALUES (%s);
                         ''', (telegram_id,))
             self.connection.commit()
+            if cur.statusmessage[-1] == '0':
+                return False
+            return True
         except psycopg2.errors.UniqueViolation:
             self.connection.rollback()
+            return False
+
+    def delete_user(self, telegram_id):
+        """Удаление пользователя из базы данных.
+        telegram_id: int
+        """
+        cur = self.connection.cursor()
+        try:
+            cur.execute('''
+                        DELETE FROM Users
+                        WHERE telegram_id=%s;
+                        ''', (telegram_id,))
+            self.connection.commit()
+            if cur.statusmessage[-1] == '0':
+                return False
+            return True
+        except psycopg2.errors.UniqueViolation:
+            self.connection.rollback()
+            return False
 
     def add_place(self, name, address, city_name=None):
         """Добавление Места в базу данных.
@@ -141,8 +163,27 @@ class PgAPI(object):
                         INSERT INTO Categories (name, tag) VALUES (%s, %s);
                         ''', (name, tag))
             self.connection.commit()
+            if cur.statusmessage[-1] == '0':
+                return False
+            return True
         except psycopg2.errors.UniqueViolation:
             self.connection.rollback()
+            return False
+
+    def delete_category(self, name):
+        cur = self.connection.cursor()
+        try:
+            cur.execute('''
+                        DELETE FROM Categories
+                        WHERE name = %s;
+                        ''', (name, ))
+            self.connection.commit()
+            if cur.statusmessage[-1] == '0':
+                return False
+            return True
+        except psycopg2.errors.UniqueViolation:
+            self.connection.rollback()
+            return False
 
     def find_city(self, city_name):
         """Поиск id города по названию"""
@@ -184,7 +225,8 @@ class PgAPI(object):
                     SELECT name From Categories
                     WHERE id = %s;
                     ''', (category_id,))
-        return cur.fetchall()
+        resp = cur.fetchone()
+        return resp[0] if resp else None
 
     def get_all_subscribed_users(self):
         """Возвращает список всех подписанных пользователей"""
@@ -203,13 +245,13 @@ class PgAPI(object):
                     WHERE telegram_id=%s
                     ''', (user_id,))
         categories = cur.fetchone()
-        return [categories[0]] if categories[0] else []
+        return [categories[0]][0] if categories[0] else []
 
     def set_user_category(self, user_id, category):
         """Задать новую категорию пользователю"""
         old_categories = self.get_user_categories(user_id)
         new_category = self.find_category(category)
-        if new_category not in old_categories:
+        if new_category and new_category not in old_categories:
             old_categories.append(new_category)
             cur = self.connection.cursor()
             cur.execute('''
@@ -245,7 +287,6 @@ class PgAPI(object):
                     WHERE telegram_id=%s
                     ''', (user_id,))
         categories = cur.fetchone()
-        print(categories)
         if not categories:
             return False
         events = []
@@ -286,6 +327,20 @@ class PgAPI(object):
         else:
             self.connection.commit()
             return True
+
+    def clear_data(self):
+        cur = self.connection.cursor()
+        cur.execute('''
+            BEGIN;
+            TRUNCATE TABLE Cities CASCADE;
+            TRUNCATE TABLE Places CASCADE;
+            TRUNCATE TABLE Events CASCADE;
+            TRUNCATE TABLE Users CASCADE;
+            TRUNCATE TABLE  Messages CASCADE;
+            TRUNCATE TABLE  Categories CASCADE;
+            COMMIT;
+                    ''')
+        self.connection.commit()
 
 
 def init_db(database_config):
