@@ -325,7 +325,7 @@ class PgAPI(object):
         for category in categories:
             print(category)
             cur.execute('''
-                        SELECT * From Events
+                        SELECT id, name From Events
                         WHERE category = %s
                         ''', (category,))
             category_events = cur.fetchall()
