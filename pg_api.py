@@ -34,7 +34,7 @@ class PgAPI(object):
             place_id INT REFERENCES Places(id),
             url TEXT,
             start_datetime TIMESTAMP,
-            finish_datetime TIMESTAMP 
+            finish_datetime TIMESTAMP
             );
 
             CREATE TABLE Users
@@ -65,7 +65,7 @@ class PgAPI(object):
         users = self.get_all_users()
         messages = [{'telegram_id': user['telegram_id'],
                      'events': self.send_user_event(user['telegram_id'])
-                    }
+                     }
                     for user in users]
         return messages
 
@@ -90,7 +90,7 @@ class PgAPI(object):
         city_id = self.find_city(city_name) if city_name else None
         try:
             cur.execute('''
-                        INSERT INTO Places (name, city_id, address) 
+                        INSERT INTO Places (name, city_id, address)
                         VALUES (%s, %s, %s);
                         ''', (name, city_id, address))
             self.connection.commit()
@@ -114,7 +114,7 @@ class PgAPI(object):
         try:
             cur.execute('''
                         INSERT INTO Events
-                        (name, category, city_id, place_id, url, 
+                        (name, category, city_id, place_id, url,
                         start_datetime, finish_datetime)
                         VALUES (%s, %s, %s, %s, %s, %s, %s);
                         ''', (name, category_id, city_id, place_id, url,
@@ -173,7 +173,7 @@ class PgAPI(object):
     def delete_old_events(self):
         cur = self.connection.cursor()
         cur.execute('''
-                    DELETE FROM Events 
+                    DELETE FROM Events
                     WHERE finish_datetime < CURRENT_TIMESTAMP;
                     ''')
         self.connection.commit()
@@ -233,7 +233,6 @@ class PgAPI(object):
                      ''', (city_id, user_id))
         self.connection.commit()
 
-
     def send_user_events(self, user_id, count=1):
         """Функция, которая возвращает пользователю события
         Возвращает n случайных событий из категорий
@@ -266,9 +265,9 @@ class PgAPI(object):
         cur = self.connection.cursor()
         cur.execute('''
                      UPDATE Users
-                     SET subscribed=True 
+                     SET subscribed=True
                      WHERE telegram_id=%s AND subscribed=False
-                     ''', (user_id, ))
+                     ''', (user_id,))
         if cur.statusmessage[-1] == '0':
             return False
         else:
@@ -280,9 +279,9 @@ class PgAPI(object):
         cur = self.connection.cursor()
         cur.execute('''
                      UPDATE Users
-                     SET subscribed=False 
+                     SET subscribed=False
                      WHERE telegram_id=%s AND subscribed=True
-                     ''', (user_id, ))
+                     ''', (user_id,))
         if cur.statusmessage[-1] == '0':
             return False
         else:
