@@ -62,10 +62,21 @@ async def inline_answer_callback_handler(query: types.CallbackQuery):
 
 
 @dp.callback_query_handler(text='find')
+async def inline_answer_callback_handler(query: types.CallbackQuery):
+    response = TelegramAPI.find_command(self=bot_api,
+                                        data=query)
+    await bot.send_message(query.from_user.id, response)
+
+
 @dp.callback_query_handler(text='clean')
 async def inline_answer_callback_handler(query: types.CallbackQuery):
-    response = TelegramAPI.process_callback(query=query)
+    response = TelegramAPI.clean_command(self=bot_api,
+                                         data=query)
     await bot.send_message(query.from_user.id, response)
+    response, keyboard_markup = TelegramAPI.categories_command(
+        self=bot_api, query=query)
+    await bot.send_message(query.from_user.id, response,
+                           reply_markup=keyboard_markup)
 
 
 @dp.message_handler(commands='subscribe')
@@ -80,6 +91,7 @@ async def command_cmd_handler(message: types.Message):
     response = TelegramAPI.unsubscribe_command(self=bot_api,
                                                data=message)
     await message.reply(response)
+
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)

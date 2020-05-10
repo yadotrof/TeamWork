@@ -56,6 +56,7 @@ class TelegramAPI(BotAPI):
                'в свободное время, для начала расскажи о себе ' \
                '/registration ^^ '
         self.db.add_user(message.from_user.id)
+        self.db.clear_user_subscribed(message.from_user.id)
         return text
 
     @staticmethod
@@ -76,16 +77,6 @@ class TelegramAPI(BotAPI):
         # TODO нужна функци добавления инфы о подписке в бд
         return 0
 
-    def process_callback(self, query):
-        answer_data = query.data
-        bot_callback = {
-            'find': 'find_command',
-            'clean': 'clean_command'
-        }
-        func = bot_callback.get(answer_data,
-                                lambda: "Я пока не знаю такой команды")
-        return func(self, answer_data)
-
     def process_city(self, query):
         self.db.set_user_city(query.from_user.id, query.data)
         text = "давай посмотрим, что ты любишь /categories"
@@ -100,10 +91,10 @@ class TelegramAPI(BotAPI):
         if(user_tags == [[None]]):
             text = 'У тебя пока ничего не выбрано, отметь что-нибудь'
         else:
-            cat = ', '.join(self.db.get_category_name(user_tag)
+            cat = ', '.join(str(self.db.get_category_name(user_tag))
                             for user_tag in user_tags)
             text = f'Сейчас у тебя выбраны:{cat}'
-        keyboard_markup = types.InlineKeyboardMarkup(row_width=6)
+        keyboard_markup = types.InlineKeyboardMarkup()
         # categories = (category["slug"], category["name"] for category
         # in categories_ev if category["name"] not in)
         categories = (('Кино', 'cinema'),
@@ -132,12 +123,14 @@ class TelegramAPI(BotAPI):
 
     def find_command(self, data):
         text = "Смотри, куда можно сходить\n"
-        events = self.get_event(data)
+        events = self.db.send_user_events(data.from_user.id)
         return text + "\n".join(events)
 
     def clean_command(self, data):
         # почистить выбранные категории пользователя в бд
-        self.categories_command(data)
+        self.db.clear_user_categories(data.from_user.id)
+        text = "Теперь можешь выбрать новые\n"
+        return text
 
     def subscribe_command(self, data):
         # изменить полу подписки в базе
