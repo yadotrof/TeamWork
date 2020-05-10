@@ -22,14 +22,6 @@ class BotAPI(ABC):
     def get_event(self, data):
         pass
 
-    @abstractmethod
-    def process_message(self, data):
-        pass
-
-    @abstractmethod
-    def set_subsciber(self, data):
-        pass
-
 
 class TelegramAPI(BotAPI):
     def __init__(self, config):
@@ -58,12 +50,12 @@ class TelegramAPI(BotAPI):
         converted_data = self.convert_data(data)
         self.db.get_event(converted_data)
 
-    def start_command(self, data):
-        text = f'Привет, {data.from_user.username} я бот, который ' \
+    def start_command(self, message):
+        text = f'Привет, {message.from_user.username} я бот, который ' \
                'подскажет, куда тебе сходить ' \
                'в свободное время, для начала расскажи о себе ' \
                '/registration ^^ '
-        self.db.add_user(data.from_user.id)
+        self.db.add_user(message.from_user.id)
         return text
 
     @staticmethod
@@ -101,12 +93,16 @@ class TelegramAPI(BotAPI):
 
     @staticmethod
     def categories_command(self, query):
-        with open('categories', 'r') as f:
-            categories_ev = pickle.load(f)
-
+        # with open('categories', 'rb') as f:
+        #    categories_ev = pickle.load(f)
         user_tags = self.db.get_user_categories(query.from_user.id)
-        cat = ', '.join(self.db.get_category_name(user_tag) for user_tag in user_tags)
-        text = f'Сейчас у тебя выбраны:{cat}'
+        print(user_tags)
+        if(user_tags == [[None]]):
+            text = 'У тебя пока ничего не выбрано, отметь что-нибудь'
+        else:
+            cat = ', '.join(self.db.get_category_name(user_tag)
+                            for user_tag in user_tags)
+            text = f'Сейчас у тебя выбраны:{cat}'
         keyboard_markup = types.InlineKeyboardMarkup(row_width=6)
         # categories = (category["slug"], category["name"] for category
         # in categories_ev if category["name"] not in)
@@ -120,6 +116,7 @@ class TelegramAPI(BotAPI):
         row_btn = (types.InlineKeyboardButton(text, callback_data=data)
                    for text, data in categories)
         keyboard_markup.row(*row_btn)
+
         return text, keyboard_markup
 
     def process_categories(self, query):
@@ -129,7 +126,8 @@ class TelegramAPI(BotAPI):
     def help_command():
         text = 'Для начала работы /start\nДля выбора города' \
                ' /registration\nДля настройки категорий ' \
-               '/categories\nДля поиска /find'
+               '/categories\nДля поиска /find\nЧтобы подписаться' \
+               ' на рассылку /subscribe'
         return text
 
     def find_command(self, data):
@@ -143,14 +141,14 @@ class TelegramAPI(BotAPI):
 
     def subscribe_command(self, data):
         # изменить полу подписки в базе
-        self.categories_command(data)
+        self.db.set_user_subscribed(data.from_user.id)
         text = "Поздравялем, теперь тебе будет приходить подборка " \
                "меропирятий и ты ничего не пропустишь "
         return text
 
     def unsubscribe_command(self, data):
         # изменить полу подписки в базе
-        self.categories_command(data)
+        self.db.clear_user_subscribed(data.from_user.id)
         text = "Ты отписался, но все равно можешь посмотреть, куда " \
                "сходить, просто нажми /find или /help - чтобы " \
                "посмотреть все команды"
