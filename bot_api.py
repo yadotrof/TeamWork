@@ -75,10 +75,6 @@ class TelegramAPI(BotAPI):
 
         return text, keyboard_markup
 
-    def set_subscriber(self, data):
-        # TODO нужна функци добавления инфы о подписке в бд
-        return 0
-
     def process_city(self, query):
         """Метод заполняющий поле user.city в бд"""
         self.db.set_user_city(query.from_user.id, query.data)
@@ -132,8 +128,13 @@ class TelegramAPI(BotAPI):
         """Метод обрабатывающий команду find"""
         text = "Смотри, куда можно сходить: \n"
         events = self.db.send_user_events(data.from_user.id)
-        print(events)
-        return text + "\n".join(event[5] for event in events)
+        keyboard_markup = types.InlineKeyboardMarkup(row_width=1)
+        row_btns = (types.InlineKeyboardButton(
+            str(event[1]), callback_data=str(event[0]))
+                    for event in events)
+        for btn in row_btns:
+            keyboard_markup.add(btn)
+        return text, keyboard_markup
 
     def clean_command(self, data):
         """Метод обрабатывающий команду clean"""
@@ -158,3 +159,9 @@ class TelegramAPI(BotAPI):
                "сходить, просто нажми /find или /help - чтобы " \
                "посмотреть все команды"
         return text
+
+    def chose_command(self, data):
+        """Метод получающий инфу по выбранному событию"""
+        # почистить выбранные категории пользователя в бд
+        event = self.db.get_event(data.data)
+        return event[0][5]

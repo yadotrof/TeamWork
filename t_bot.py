@@ -63,9 +63,10 @@ async def inline_answer_callback_handler(query: types.CallbackQuery):
 
 @dp.callback_query_handler(text='find')
 async def inline_answer_callback_handler(query: types.CallbackQuery):
-    response = TelegramAPI.find_command(self=bot_api,
-                                        data=query)
-    await bot.send_message(query.from_user.id, response)
+    response, keyboard_markup = TelegramAPI.find_command(self=bot_api,
+                                                         data=query)
+    await bot.send_message(query.from_user.id, response,
+                           reply_markup=keyboard_markup)
 
 
 @dp.callback_query_handler(text='clean')
@@ -91,6 +92,13 @@ async def command_cmd_handler(message: types.Message):
     response = TelegramAPI.unsubscribe_command(self=bot_api,
                                                data=message)
     await message.reply(response)
+
+
+@dp.callback_query_handler()
+async def inline_answer_callback_handler(query: types.CallbackQuery):
+    response = TelegramAPI.chose_command(self=bot_api,
+                                         data=query)
+    await bot.send_message(query.from_user.id, response)
 
 
 if __name__ == '__main__':
