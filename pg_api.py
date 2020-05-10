@@ -61,6 +61,9 @@ class PgAPI(object):
         self.connection.commit()
 
     def send_daily(self):
+        """ Возврат событий всем подписанным пользователям
+        :return: [{tg_id: _, events: [..]}, ..]
+        """
         users = self.get_all_users()
         messages = [{'telegram_id': user['telegram_id'],
                      'events': self.send_user_event(user['telegram_id'])
@@ -123,7 +126,7 @@ class PgAPI(object):
                   city_name=None, place_name=None, url=None):
         """Добавление События в базу данных.
         url: str
-        datetime: datetime
+        start_datetime, finish_datetime: datetime
         """
         self.add_category(category['name'], category['tag'])
 
@@ -176,6 +179,7 @@ class PgAPI(object):
             return False
 
     def delete_category(self, name):
+        """Удаление категории из базы данных по имени"""
         cur = self.connection.cursor()
         try:
             cur.execute('''
@@ -287,8 +291,7 @@ class PgAPI(object):
         self.connection.commit()
 
     def set_user_city(self, user_id, city_name):
-        """data = {chat_id: int, city: str}"""
-
+        """Задаёт город пользователя"""
         city_id = self.find_city(city_name)
         cur = self.connection.cursor()
         cur.execute('''
@@ -297,9 +300,9 @@ class PgAPI(object):
                      ''', (city_id, user_id))
         self.connection.commit()
 
-    def send_user_events(self, user_id, count=1):
+    def send_user_events(self, user_id):
         """Функция, которая возвращает пользователю события
-        Возвращает n случайных событий из категорий
+        Возвращает все случайные события из категорий
         которые выбраны у пользователя.
         Если у пользователя не стоят категории, вернуть False
         Если не найдены события, вернуть []
@@ -351,22 +354,9 @@ class PgAPI(object):
             self.connection.commit()
             return True
 
-    def clear_data(self):
-        cur = self.connection.cursor()
-        cur.execute('''
-            BEGIN;
-            TRUNCATE TABLE Cities CASCADE;
-            TRUNCATE TABLE Places CASCADE;
-            TRUNCATE TABLE Events CASCADE;
-            TRUNCATE TABLE Users CASCADE;
-            TRUNCATE TABLE  Messages CASCADE;
-            TRUNCATE TABLE  Categories CASCADE;
-            COMMIT;
-                    ''')
-        self.connection.commit()
-
 
 def init_db(database_config):
+    """Функция для вызова инициализации таблиц в бд"""
     db = PgAPI(**database_config)
     db.init_tables()
 
