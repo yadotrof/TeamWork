@@ -1,5 +1,6 @@
 import psycopg2
 from config import DB_CONFIG
+import random
 
 
 class PgAPI(object):
@@ -66,7 +67,7 @@ class PgAPI(object):
         """
         users = self.get_all_users()
         messages = [{'telegram_id': user['telegram_id'],
-                     'events': self.send_user_event(user['telegram_id'])
+                     'events': self.send_user_events(user['telegram_id'])
                      }
                     for user in users]
         return messages
@@ -300,9 +301,9 @@ class PgAPI(object):
                      ''', (city_id, user_id))
         self.connection.commit()
 
-    def send_user_events(self, user_id):
+    def send_user_events(self, user_id, count=1):
         """Функция, которая возвращает пользователю события
-        Возвращает все случайные события из категорий
+        Возвращает n случайных событий из категорий
         которые выбраны у пользователя.
         Если у пользователя не стоят категории, вернуть False
         Если не найдены события, вернуть []
@@ -312,19 +313,27 @@ class PgAPI(object):
                     SELECT categories From Users
                     WHERE telegram_id=%s
                     ''', (user_id,))
-        categories = cur.fetchone()
+        categories = cur.fetchone()[0]
         if not categories:
             return False
         events = []
-        for category in categories[0]:
+        for category in categories:
+            print(category)
             cur.execute('''
                         SELECT * From Events
-                        WHERE category <> %s
+                        WHERE category = %s
                         ''', (category,))
             category_events = cur.fetchall()
-            # for event in category_events:
-            #    events.add(event)
-        return category_events
+            for event in category_events:
+                events.append(event)
+
+        choised_events = []
+        for i in range(count):
+            item = random.choice(events)
+            events.remove(item)
+            choised_events.append(item)
+
+        return choised_events
 
     def set_user_subscribed(self, user_id):
         """Подписать пользователя на рассылку"""
